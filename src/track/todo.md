@@ -2,5 +2,5 @@
 
 - [x] pass state
 - [x] save token
+- [x] get currently playing track
 - [ ] refresh token
-- [ ] get currently playing track

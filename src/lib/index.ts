@@ -1,6 +1,6 @@
 import 'dotenv/config.js'
-import { readFile, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
+import { readFile, writeFile } from 'node:fs/promises'
 
 export const buildUrl = (base: string, params: Record<string, unknown>) => {
   const url = new URL(base)

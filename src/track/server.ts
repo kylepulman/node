@@ -1,7 +1,7 @@
-import { RequestError, env } from '../lib/index.js'
-import type { Token } from './types.js'
-import { data } from './index.js'
 import express from 'express'
+import { RequestError, env } from '../lib/index.js'
+import { data } from './index.js'
+import type { Token } from './types.js'
 
 const app = express()
 

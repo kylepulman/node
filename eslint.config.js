@@ -38,6 +38,7 @@ export default tslint.config(
       'max-statements': 'off',
       'no-magic-numbers': 'off',
       'one-var': 'off',
+      'sort-imports': 'off',
     },
   },
   {
