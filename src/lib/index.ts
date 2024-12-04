@@ -1,3 +1,4 @@
+import 'dotenv/config.js'
 import { spawn } from 'node:child_process'
 
 export const buildUrl = (base: string, params: Record<string, unknown>) => {
@@ -29,4 +30,14 @@ export const startServerInBackground = (serverArgs: string[]) => {
     detached: true,
     stdio: 'ignore',
   }).unref()
+}
+
+export const env = (name: string) => {
+  const value = process.env[name]
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  throw new Error(`Could not process "${name}".`)
 }

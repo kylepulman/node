@@ -23,6 +23,13 @@ export default tslint.config(
         'error',
         'never',
       ],
+      'camelcase': ['error', {
+        allow: [
+          'response_type',
+          'client_id',
+          'redirect_uri',
+        ],
+      }],
       'no-magic-numbers': 'off',
       'one-var': 'off',
     },
