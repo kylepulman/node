@@ -1,7 +1,14 @@
 #!/usr/bin/env node
-import { buildUrl, env, fileStorage, startServerInBackground } from '../lib/index.js'
+import { FileStorage, buildUrl, env, startServerInBackground } from '../lib/index.js'
 import { Command } from 'commander'
+import type { Token } from './types.js'
+import type { UUID } from 'crypto'
 import open from 'open'
+
+export const data = new FileStorage<{
+  state?: UUID
+  token?: Token
+}>(`${import.meta.dirname}/data.json`)
 
 const program = new Command()
 
@@ -18,7 +25,7 @@ program
 
     const state = crypto.randomUUID()
 
-    await fileStorage.set(`${import.meta.dirname}/data`, { state })
+    await data.set({ state })
 
     const { href } = buildUrl(env('SPOTIFY_AUTHORIZATION_URL'), {
       client_id: env('SPOTIFY_CLIENT_ID'),

@@ -33,6 +33,7 @@ export default tslint.config(
       }],
       'dot-notation': 'off',
       'init-declarations': 'off',
+      'max-classes-per-file': 'off',
       'max-lines-per-function': 'off',
       'max-statements': 'off',
       'no-magic-numbers': 'off',

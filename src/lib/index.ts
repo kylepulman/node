@@ -43,14 +43,19 @@ export const env = (name: string) => {
   throw new Error(`Could not process "${name}".`)
 }
 
-export const fileStorage = {
-  get: async (path: string): Promise<Record<string, string>> => {
-    const buffer = await readFile(`${path}.json`)
+export class FileStorage<Shape extends Record<string, unknown>> {
+  constructor(public path: string) {
+    this.path = path
+  }
+
+  async get(): Promise<Shape> {
+    const buffer = await readFile(this.path)
     const text = buffer.toString()
 
-    return JSON.parse(text) as Record<string, string>
-  },
-  set: async (path: string, data: Record<string, unknown>) => {
-    await writeFile(`${path}.json`, JSON.stringify(data))
-  },
+    return JSON.parse(text) as Shape
+  }
+
+  async set(data: Shape) {
+    await writeFile(this.path, JSON.stringify(data))
+  }
 }

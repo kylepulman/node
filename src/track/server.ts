@@ -1,4 +1,6 @@
-import { RequestError, env, fileStorage } from '../lib/index.js'
+import { RequestError, env } from '../lib/index.js'
+import type { Token } from './types.js'
+import { data } from './index.js'
 import express from 'express'
 
 const app = express()
@@ -6,9 +8,9 @@ const app = express()
 app.get('/api/auth', async (req, res) => {
   const { state, code, error } = req.query
 
-  const stored = await fileStorage.get(`${import.meta.dirname}/data`)
+  let stored = await data.get()
 
-  if (state !== stored['state'] || error || typeof code !== 'string') {
+  if (state !== stored.state || error || typeof code !== 'string') {
     res
       .status(400)
       .json(new RequestError(
@@ -17,7 +19,7 @@ app.get('/api/auth', async (req, res) => {
         'Error requesting authorization code.',
       ))
 
-    return
+    process.exit()
   }
 
   const response = await fetch(env('SPOTIFY_TOKEN_URL'), {
@@ -43,7 +45,24 @@ app.get('/api/auth', async (req, res) => {
   }
 
   if (response.ok) {
-    res.json(body)
+    stored = await data.get()
+
+    await data.set({
+      ...stored,
+      token: body as Token,
+    })
+
+    const html = `<body style="
+                    margin: 0; 
+                    font-size: 2rem; 
+                    background: black; 
+                    color: white; 
+                    height: 100vh;
+                    display: grid; 
+                    place-items: center;
+                  ">Connected successfully, you may close this tab.</body>`
+
+    res.send(html)
 
     process.exit()
   }
