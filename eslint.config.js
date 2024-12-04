@@ -29,6 +29,7 @@ export default tslint.config(
           'client_id',
           'redirect_uri',
           'grant_type',
+          'refresh_token',
         ],
       }],
       'dot-notation': 'off',

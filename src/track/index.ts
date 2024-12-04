@@ -14,22 +14,67 @@ export const data = new FileStorage<{
   expiresAt?: Date
 }>(`${import.meta.dirname}/data.json`)
 
+const getAccessToken = async () => {
+  const stored = await data.get()
+
+  if (stored.expiresAt && new Date() >= new Date(stored.expiresAt)) {
+    const requestTokenWithRefreshToken = new TypedFetch<Token>(
+      env('SPOTIFY_TOKEN_URL'),
+      {
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: stored.token?.refresh_token ?? '',
+        }).toString(),
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        method: 'POST',
+      },
+      'Error refreshing token.',
+    )
+
+    const token = await requestTokenWithRefreshToken.request()
+
+    if (token instanceof RequestError) {
+      console.error(token)
+
+      return null
+    }
+
+    if (typeof token === 'string') {
+      console.log(token)
+
+      return null
+    }
+
+    const expiresAt = new Date(Date.now() + token.expires_in * 1000)
+
+    token.refresh_token = stored.token?.refresh_token ?? ''
+
+    await data.set({
+      ...stored,
+      expiresAt,
+      token,
+    })
+
+    console.log('--- TOKEN REFRESHED ---')
+    return token.access_token
+  }
+
+  return stored.token?.access_token ?? ''
+}
+
 const program = new Command()
 
 program
   .name('track')
   .action(async () => {
-    const stored = await data.get()
-
-    if (stored.expiresAt && new Date() >= new Date(stored.expiresAt)) {
-      console.log('--- TOKEN REFRESHED ---')
-    }
-
     const getCurrentlyPlayingTrack = new TypedFetch<CurrentlyPlaying>(
       `${env('SPOTIFY_API_URL')}/me/player/currently-playing`,
       {
         headers: {
-          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+          Authorization: `Bearer ${await getAccessToken() ?? ''}`,
         },
       },
       'Error getting currently playing track.',
@@ -76,13 +121,11 @@ program
 program
   .command('play')
   .action(async () => {
-    const stored = await data.get()
-
     const resumePlayback = new TypedFetch<void>(
       `${env('SPOTIFY_API_URL')}/me/player/play`,
       {
         headers: {
-          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+          Authorization: `Bearer ${await getAccessToken() ?? ''}`,
         },
         method: 'PUT',
       },
@@ -101,13 +144,11 @@ program
 program
   .command('pause')
   .action(async () => {
-    const stored = await data.get()
-
     const pausePlayback = new TypedFetch<void>(
       `${env('SPOTIFY_API_URL')}/me/player/pause`,
       {
         headers: {
-          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+          Authorization: `Bearer ${await getAccessToken() ?? ''}`,
         },
         method: 'PUT',
       },

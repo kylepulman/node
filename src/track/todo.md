@@ -4,4 +4,4 @@
 - [x] save token
 - [x] get currently playing track
 - [x] pause/resume playback
-- [ ] refresh token
+- [x] refresh token
