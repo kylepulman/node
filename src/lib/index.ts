@@ -1,4 +1,5 @@
 import 'dotenv/config.js'
+import { readFile, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 
 export const buildUrl = (base: string, params: Record<string, unknown>) => {
@@ -40,4 +41,16 @@ export const env = (name: string) => {
   }
 
   throw new Error(`Could not process "${name}".`)
+}
+
+export const fileStorage = {
+  get: async (path: string): Promise<Record<string, string>> => {
+    const buffer = await readFile(`${path}.json`)
+    const text = buffer.toString()
+
+    return JSON.parse(text) as Record<string, string>
+  },
+  set: async (path: string, data: Record<string, unknown>) => {
+    await writeFile(`${path}.json`, JSON.stringify(data))
+  },
 }

@@ -1,12 +1,14 @@
-import { RequestError, env } from '../lib/index.js'
+import { RequestError, env, fileStorage } from '../lib/index.js'
 import express from 'express'
 
 const app = express()
 
 app.get('/api/auth', async (req, res) => {
-  const { code, error } = req.query
+  const { state, code, error } = req.query
 
-  if (error || typeof code !== 'string') {
+  const stored = await fileStorage.get(`${import.meta.dirname}/data`)
+
+  if (state !== stored['state'] || error || typeof code !== 'string') {
     res
       .status(400)
       .json(new RequestError(

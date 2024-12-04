@@ -31,6 +31,7 @@ export default tslint.config(
           'grant_type',
         ],
       }],
+      'dot-notation': 'off',
       'init-declarations': 'off',
       'max-lines-per-function': 'off',
       'max-statements': 'off',
