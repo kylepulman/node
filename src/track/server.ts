@@ -31,12 +31,12 @@ app.get('/api/auth', async (req, res) => {
         redirect_uri: env('SPOTIFY_REDIRECT_URI'),
       }).toString(),
       headers: {
-        Authorization: `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
-        "Content-Type": 'application/x-www-form-urlencoded'
+        'Authorization': `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      method: 'POST'
+      method: 'POST',
     },
-    'Error requesting token with authorization code.'
+    'Error requesting token with authorization code.',
   )
 
   const token = await requestTokenWithAuthorizationCode.request()
@@ -51,7 +51,7 @@ app.get('/api/auth', async (req, res) => {
 
   if (typeof token === 'string') {
     res.send(token)
-    
+
     process.exit()
   }
 

@@ -74,6 +74,56 @@ program
   )
 
 program
+  .command('play')
+  .action(async () => {
+    const stored = await data.get()
+
+    const resumePlayback = new TypedFetch<void>(
+      `${env('SPOTIFY_API_URL')}/me/player/play`,
+      {
+        headers: {
+          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+        },
+        method: 'PUT',
+      },
+      'Error resuming playback.',
+    )
+
+    const requestError = await resumePlayback.request()
+
+    if (
+      requestError instanceof RequestError
+    ) {
+      console.error(requestError)
+    }
+  })
+
+program
+  .command('pause')
+  .action(async () => {
+    const stored = await data.get()
+
+    const pausePlayback = new TypedFetch<void>(
+      `${env('SPOTIFY_API_URL')}/me/player/pause`,
+      {
+        headers: {
+          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+        },
+        method: 'PUT',
+      },
+      'Error pausing playback.',
+    )
+
+    const requestError = await pausePlayback.request()
+
+    if (
+      requestError instanceof RequestError
+    ) {
+      console.error(requestError)
+    }
+  })
+
+program
   .command('login')
   .action(async () => {
     startServerInBackground([`${import.meta.dirname}/server.js`])
