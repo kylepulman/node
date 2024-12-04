@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process'
+
 export const buildUrl = (base: string, params: Record<string, unknown>) => {
   const url = new URL(base)
 
@@ -20,4 +22,11 @@ export class RequestError {
     this.error = error
     this.message = message
   }
+}
+
+export const startServerInBackground = (serverArgs: string[]) => {
+  spawn('node', serverArgs, {
+    detached: true,
+    stdio: 'ignore',
+  }).unref()
 }
