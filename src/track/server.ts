@@ -35,21 +35,17 @@ app.get('/api/auth', async (req, res) => {
     method: 'POST',
   })
 
-  let body
-
-  if (response.headers.get('Content-Type')?.includes('application/json')) {
-    body = await response.json()
-  }
-  else {
-    body = await response.text()
-  }
+  const token = await response.json() as Token
 
   if (response.ok) {
     stored = await data.get()
 
+    const expiresAt = new Date(Date.now() + token.expires_in * 1000)
+
     await data.set({
       ...stored,
-      token: body as Token,
+      expiresAt,
+      token,
     })
 
     const html = `<body style="
@@ -71,7 +67,7 @@ app.get('/api/auth', async (req, res) => {
     .status(response.status)
     .json(new RequestError(
       response.status,
-      body,
+      token,
       'Error requesting token.',
     ))
 

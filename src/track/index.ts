@@ -8,6 +8,7 @@ import open from 'open'
 export const data = new FileStorage<{
   state?: UUID
   token?: Token
+  expiresAt?: Date
 }>(`${import.meta.dirname}/data.json`)
 
 const program = new Command()
