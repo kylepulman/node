@@ -2,10 +2,6 @@ import jslint from '@eslint/js'
 import stlint from '@stylistic/eslint-plugin'
 import tslint from 'typescript-eslint'
 
-const stylistic = {
-  indent: 2,
-}
-
 export default tslint.config(
   jslint.configs.all,
   tslint.configs.strictTypeChecked,
@@ -17,7 +13,7 @@ export default tslint.config(
     rules: {
       '@stylistic/indent': [
         'error',
-        stylistic.indent,
+        2,
       ],
       '@stylistic/quotes': [
         'error',
@@ -27,6 +23,8 @@ export default tslint.config(
         'error',
         'never',
       ],
+      'no-magic-numbers': 'off',
+      'one-var': 'off',
     },
   },
   {

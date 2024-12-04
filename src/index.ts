@@ -1,8 +1,11 @@
-import { buildUrl } from './lib/index.js'
+import { RequestError } from './lib/index.js'
 
-const url = buildUrl('http://localhost:3000', {
-  anotherParam: false,
-  firstParam: 'asdf',
-})
+const requestError = new RequestError(
+  400,
+  {
+    error: 'request_error',
+    message: 'there was a problem with this request',
+  },
+  'Error making HTTP request.')
 
-console.log(url) /* eslint-disable-line no-console */
+console.log(requestError instanceof RequestError, requestError) /* eslint-disable-line no-console */

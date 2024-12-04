@@ -9,3 +9,15 @@ export const buildUrl = (base: string, params: Record<string, unknown>) => {
 
   return url
 }
+
+export class RequestError {
+  constructor(
+    public status: number,
+    public error: unknown,
+    public message: string,
+  ) {
+    this.status = status
+    this.error = error
+    this.message = message
+  }
+}
