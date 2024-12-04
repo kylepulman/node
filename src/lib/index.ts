@@ -59,3 +59,42 @@ export class FileStorage<Shape extends Record<string, unknown>> {
     await writeFile(this.path, JSON.stringify(data))
   }
 }
+
+interface CustomRequestInit extends RequestInit {
+  headers?: {
+    'Authorization'?: string
+    'Content-Type'?: 'application/json' | 'application/x-www-form-urlencoded'
+  }
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+}
+
+export class TypedFetch<BodyShape> {
+  constructor(
+    public input: string,
+    public init: CustomRequestInit,
+    public errorMessage: string,
+  ) {
+    this.input = input
+    this.init = init
+    this.errorMessage = errorMessage
+  }
+
+  async request(): Promise<RequestError | BodyShape | string> {
+    const response = await fetch(this.input, this.init)
+
+    let body
+
+    if (response.headers.get('Content-Type')?.includes('application/json')) {
+      body = await response.json() as BodyShape
+    }
+    else {
+      body = await response.text()
+    }
+
+    if (response.ok) {
+      return body
+    }
+
+    return new RequestError(response.status, body, this.errorMessage)
+  }
+}

@@ -1,5 +1,5 @@
 import express from 'express'
-import { RequestError, env } from '../lib/index.js'
+import { RequestError, TypedFetch, env } from '../lib/index.js'
 import { data } from './index.js'
 import type { Token } from './types.js'
 
@@ -22,33 +22,50 @@ app.get('/api/auth', async (req, res) => {
     process.exit()
   }
 
-  const response = await fetch(env('SPOTIFY_TOKEN_URL'), {
-    body: new URLSearchParams({
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: env('SPOTIFY_REDIRECT_URI'),
-    }).toString(),
-    headers: {
-      'Authorization': `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const requestTokenWithAuthorizationCode = new TypedFetch<Token>(
+    env('SPOTIFY_TOKEN_URL'),
+    {
+      body: new URLSearchParams({
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: env('SPOTIFY_REDIRECT_URI'),
+      }).toString(),
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
+        "Content-Type": 'application/x-www-form-urlencoded'
+      },
+      method: 'POST'
     },
-    method: 'POST',
+    'Error requesting token with authorization code.'
+  )
+
+  const token = await requestTokenWithAuthorizationCode.request()
+
+  if (token instanceof RequestError) {
+    res
+      .status(token.status)
+      .json(token)
+
+    process.exit()
+  }
+
+  if (typeof token === 'string') {
+    res.send(token)
+    
+    process.exit()
+  }
+
+  stored = await data.get()
+
+  const expiresAt = new Date(Date.now() + token.expires_in * 1000)
+
+  await data.set({
+    ...stored,
+    expiresAt,
+    token,
   })
 
-  const token = await response.json() as Token
-
-  if (response.ok) {
-    stored = await data.get()
-
-    const expiresAt = new Date(Date.now() + token.expires_in * 1000)
-
-    await data.set({
-      ...stored,
-      expiresAt,
-      token,
-    })
-
-    const html = `<body style="
+  const html = `<body style="
                     margin: 0; 
                     font-size: 2rem; 
                     background: black; 
@@ -58,18 +75,7 @@ app.get('/api/auth', async (req, res) => {
                     place-items: center;
                   ">Connected successfully, you may close this tab.</body>`
 
-    res.send(html)
-
-    process.exit()
-  }
-
-  res
-    .status(response.status)
-    .json(new RequestError(
-      response.status,
-      token,
-      'Error requesting token.',
-    ))
+  res.send(html)
 
   process.exit()
 })

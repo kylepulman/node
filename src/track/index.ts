@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import type { UUID } from 'crypto'
 import open from 'open'
 import type { CurrentlyPlaying, Track } from 'spotify-types'
-import { FileStorage, RequestError, buildUrl, env, startServerInBackground } from '../lib/index.js'
+import { FileStorage, RequestError, TypedFetch, buildUrl, env, startServerInBackground } from '../lib/index.js'
 import type { Token } from './types.js'
 
 export const data = new FileStorage<{
@@ -25,49 +25,53 @@ program
       console.log('--- TOKEN REFRESHED ---')
     }
 
-    const response = await fetch(`${env('SPOTIFY_API_URL')}/me/player/currently-playing`, {
-      headers: {
-        Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+    const getCurrentlyPlayingTrack = new TypedFetch<CurrentlyPlaying>(
+      `${env('SPOTIFY_API_URL')}/me/player/currently-playing`,
+      {
+        headers: {
+          Authorization: `${stored.token?.token_type ?? ''} ${stored.token?.access_token ?? ''}`,
+        },
       },
-    })
+      'Error getting currently playing track.',
+    )
 
-    let body
+    const body = await getCurrentlyPlayingTrack.request()
 
-    if (response.headers.get('Content-Type')?.includes('application/json')) {
-      body = await response.json() as CurrentlyPlaying
-    }
-    else {
-      body = await response.text()
-    }
-
-    if (response.ok) {
-      if (response.status === 204) {
-        console.log('Nothing playing at the moment.')
-        return
-      }
-
-      const itemIsTrack = (body: CurrentlyPlaying, item: CurrentlyPlaying['item']): item is Track =>
-        body.currently_playing_type === 'track' && item?.type === 'track'
-
-      if (typeof body === 'object' && itemIsTrack(body, body.item)) {
-        /* eslint-disable */
-        body = {
-          name: body.item.name,
-          artists: body.item.artists.map(artist => artist.name).join(', '),
-          album: body.item.album.name,
-        }
-        /* eslint-enable */
-
-        console.log(body)
-        return
-      }
-
-      console.log(body)
+    if (body instanceof RequestError) {
+      console.error(body)
       return
     }
 
-    console.error(new RequestError(response.status, body, 'Error getting currently playing track.'))
-  })
+    if (typeof body === 'string') {
+      if (body) {
+        console.log(body)
+      }
+      else {
+        console.log('Nothing playing at the moment.')
+      }
+
+      return
+    }
+
+    const itemIsTrack = (body: CurrentlyPlaying, item: CurrentlyPlaying['item']): item is Track =>
+      body.currently_playing_type === 'track' && item?.type === 'track'
+
+    if (typeof body === 'object' && itemIsTrack(body, body.item)) {
+      /* eslint-disable */
+      const track = {
+        name: body.item.name,
+        artists: body.item.artists.map(artist => artist.name).join(', '),
+        album: body.item.album.name,
+      }
+      /* eslint-enable */
+
+      console.log(track)
+      return
+    }
+
+    console.log(body)
+  },
+  )
 
 program
   .command('login')
