@@ -5,3 +5,4 @@
 - [x] get currently playing track
 - [x] pause/resume playback
 - [x] refresh token
+- [ ] handle free users

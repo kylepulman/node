@@ -1,7 +1,24 @@
 import express from 'express'
-import { RequestError, TypedFetch, env } from '../lib/index.js'
-import { data } from './index.js'
+import { Result, TypedFetch, getEnv } from '../lib/index.js'
+import { buildExpiresAt, data, getBasicAuth } from './lib.js'
 import type { Token } from './types.js'
+
+const requestTokenWithAuthorizationCode = (code: string) => new TypedFetch<Token>(
+  getEnv('SPOTIFY_TOKEN_URL'),
+  {
+    body: new URLSearchParams({
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: getEnv('SPOTIFY_REDIRECT_URI'),
+    }).toString(),
+    headers: {
+      'Authorization': `Basic ${getBasicAuth()}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    method: 'POST',
+  },
+  'Error requesting token with authorization code.',
+)
 
 const app = express()
 
@@ -10,72 +27,35 @@ app.get('/api/auth', async (req, res) => {
 
   let stored = await data.get()
 
-  if (state !== stored.state || error || typeof code !== 'string') {
-    res
-      .status(400)
-      .json(new RequestError(
-        400,
-        error,
-        'Error requesting authorization code.',
-      ))
+  if (state !== stored.state || typeof code !== 'string' || error) {
+    res.status(400).json(new Result(
+      400,
+      error,
+      'Error requesting authorization code, try re-running "track login".',
+    ))
 
     process.exit()
   }
 
-  const requestTokenWithAuthorizationCode = new TypedFetch<Token>(
-    env('SPOTIFY_TOKEN_URL'),
-    {
-      body: new URLSearchParams({
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: env('SPOTIFY_REDIRECT_URI'),
-      }).toString(),
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${env('SPOTIFY_CLIENT_ID')}:${env('SPOTIFY_CLIENT_SECRET')}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      method: 'POST',
-    },
-    'Error requesting token with authorization code.',
-  )
+  const result = await requestTokenWithAuthorizationCode(code).request()
 
-  const token = await requestTokenWithAuthorizationCode.request()
-
-  if (token instanceof RequestError) {
-    res
-      .status(token.status)
-      .json(token)
-
-    process.exit()
-  }
-
-  if (typeof token === 'string') {
-    res.send(token)
+  if (result.status >= 400) {
+    res.status(result.status).json(result)
 
     process.exit()
   }
 
   stored = await data.get()
 
-  const expiresAt = new Date(Date.now() + token.expires_in * 1000)
+  const expiresAt = buildExpiresAt(result.body.expires_in)
 
   await data.set({
     ...stored,
     expiresAt,
-    token,
+    token: result.body,
   })
 
-  const html = `<body style="
-                    margin: 0; 
-                    font-size: 2rem; 
-                    background: black; 
-                    color: white; 
-                    height: 100vh;
-                    display: grid; 
-                    place-items: center;
-                  ">Connected successfully, you may close this tab.</body>`
-
-  res.send(html)
+  res.redirect(getEnv('SPOTIFY_PLAYER_URL'))
 
   process.exit()
 })

@@ -11,18 +11,11 @@ export default tslint.config(
       '@stylistic': stlint,
     },
     rules: {
-      '@stylistic/indent': [
-        'error',
-        2,
-      ],
-      '@stylistic/quotes': [
-        'error',
-        'single',
-      ],
-      '@stylistic/semi': [
-        'error',
-        'never',
-      ],
+      '@stylistic/brace-style': ['error', '1tbs'],
+      '@stylistic/indent': ['error', 2],
+      '@stylistic/quotes': ['error', 'single'],
+      '@stylistic/semi': ['error', 'never'],
+      'brace-style': ['error', '1tbs'],
       'camelcase': ['error', {
         allow: [
           'response_type',
@@ -30,9 +23,9 @@ export default tslint.config(
           'redirect_uri',
           'grant_type',
           'refresh_token',
+          'expires_in',
         ],
       }],
-      'dot-notation': 'off',
       'init-declarations': 'off',
       'max-classes-per-file': 'off',
       'max-lines-per-function': 'off',

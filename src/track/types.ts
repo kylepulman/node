@@ -1,3 +1,9 @@
+export type {
+  CurrentlyPlaying,
+  Episode,
+  Track,
+} from 'spotify-types'
+
 export type Token = {
   access_token: string
   token_type: 'Bearer'
