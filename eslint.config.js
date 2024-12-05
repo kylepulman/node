@@ -15,6 +15,19 @@ export default tslint.config(
       '@stylistic/indent': ['error', 2],
       '@stylistic/quotes': ['error', 'single'],
       '@stylistic/semi': ['error', 'never'],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        // Allow vars with "_" prepended: https://typescript-eslint.io/rules/no-unused-vars/#benefits-over-typescript
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+          varsIgnorePattern: '^_',
+        },
+      ],
       'brace-style': ['error', '1tbs'],
       'camelcase': ['error', {
         allow: [
@@ -24,6 +37,7 @@ export default tslint.config(
           'grant_type',
           'refresh_token',
           'expires_in',
+          'volume_percent',
         ],
       }],
       'init-declarations': 'off',
@@ -31,6 +45,7 @@ export default tslint.config(
       'max-lines-per-function': 'off',
       'max-statements': 'off',
       'no-magic-numbers': 'off',
+      'no-param-reassign': 'off',
       'one-var': 'off',
       'sort-imports': 'off',
     },

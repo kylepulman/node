@@ -3,6 +3,18 @@ import type { UUID } from 'crypto'
 import { FileStorage, TypedFetch, getEnv } from '../lib/index.js'
 import type { Token } from './types.js'
 
+export const printMessage = (message: string, type?: 'log' | 'error' | 'warn') => {
+  message = `\n${message}\n`
+
+  if (type === 'error') {
+    console.error(message)
+  } else if (type === 'warn') {
+    console.warn(message)
+  } else {
+    console.log(message)
+  }
+}
+
 export const data = new FileStorage<{
   state?: UUID
   token?: Token
@@ -18,7 +30,14 @@ export const getBasicAuth = () =>
     .toString('base64')
 
 export const getAccessToken = async () => {
-  const stored = await data.get()
+  let stored
+
+  try {
+    stored = await data.get()
+  } catch (_err) {
+    printMessage('Please run `track login` to connect your Spotify account with Track.', 'error')
+    process.exit()
+  }
 
   if (stored.expiresAt && new Date() >= new Date(stored.expiresAt)) {
     const requestTokenWithRefreshToken = new TypedFetch<Token>(
@@ -40,7 +59,7 @@ export const getAccessToken = async () => {
     const result = await requestTokenWithRefreshToken.request()
 
     if (result.status >= 400) {
-      console.error(result)
+      printMessage(result.message, 'error')
 
       return ''
     }
@@ -55,7 +74,7 @@ export const getAccessToken = async () => {
       token: result.body,
     })
 
-    console.log('--- TOKEN REFRESHED ---')
+    printMessage('--- TOKEN REFRESHED ---')
     return result.body.access_token
   }
 

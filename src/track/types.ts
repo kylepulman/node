@@ -1,10 +1,12 @@
-import type { Copyright, ExternalUrl, Image, Paging, ResumePoint, Restriction } from 'spotify-types'
+import type { Copyright, ExternalUrl, Image, Paging, ResumePoint, Restriction, PlayerErrorResponse } from 'spotify-types'
 
 export type {
   CurrentlyPlaying,
   Episode,
   Track,
 } from 'spotify-types'
+
+export type SpotifyApiErrorResponse = { error: PlayerErrorResponse }
 
 export type Token = {
   access_token: string

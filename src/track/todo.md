@@ -5,5 +5,9 @@
 - [x] get currently playing track
 - [x] pause/resume playback
 - [x] refresh token
-- [ ] handle free users
+- [x] add logout, next, previous, volume commands
+- [ ] add help messages and readme
+- [ ] handle client-side messages
 - [x] support custom output for audiobooks
+- [ ] make client messages prettier
+- [ ] start playback

@@ -1,6 +1,6 @@
 import 'dotenv/config.js'
 import { spawn } from 'node:child_process'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 export class FileStorage<Data extends Record<string, unknown>> {
   constructor(public path: string) {
@@ -16,6 +16,10 @@ export class FileStorage<Data extends Record<string, unknown>> {
 
   async set(data: Data): Promise<void> {
     await writeFile(this.path, JSON.stringify(data))
+  }
+
+  async destroy(): Promise<void> {
+    await unlink(this.path)
   }
 }
 
@@ -37,34 +41,44 @@ export class TypedFetch<Body> {
     public init: RequestInit & {
       headers?: {
         'Authorization'?: string
-        'Content-Type'?: 'application/json' | 'application/x-www-form-urlencoded'
+        'Content-Type'?:
+          | 'application/json'
+          | 'application/x-www-form-urlencoded'
       }
       method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
     },
-    public message: string,
+    public errorMessage: string,
   ) {
     this.input = input
     this.init = init
-    this.message = message
+    this.errorMessage = errorMessage
   }
 
   async request(): Promise<Result<Body>> {
-    const response = await fetch(this.input, this.init)
+    try {
+      const response = await fetch(this.input, this.init)
 
-    const isJson = response
-      .headers
-      .get('Content-Type')
-      ?.includes('application/json') ?? false
+      const isJson = response
+        .headers
+        .get('Content-Type')
+        ?.includes('application/json') ?? false
 
-    let body: Body
+      let body: Body
 
-    if (isJson) {
-      body = await response.json() as Body
-    } else {
-      body = await response.text() as Body
+      if (isJson) {
+        body = await response.json() as Body
+      } else {
+        body = await response.text() as Body
+      }
+
+      return new Result(response.status, body, this.errorMessage)
+    } catch (err) {
+      /* eslint-disable */ console.error('TypeFetch Error:', {
+        errorMessage: this.errorMessage,
+        err: err instanceof Error ? err : JSON.stringify(err),
+      }) /* eslint-enable */
+      return process.exit(1)
     }
-
-    return new Result(response.status, body, this.message)
   }
 }
 

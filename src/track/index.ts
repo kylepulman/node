@@ -2,35 +2,59 @@
 /* eslint no-console: 'off' */
 import { Command } from 'commander'
 import open from 'open'
-import { TypedFetch, buildUrl, getEnv, startServer } from '../lib/index.js'
-import { data, getAccessToken } from './lib.js'
-import type { CurrentlyPlaying, Episode, Track, Audiobook } from './types.js'
+import { Result, TypedFetch, buildUrl, getEnv, startServer } from '../lib/index.js'
+import { data, getAccessToken, printMessage } from './lib.js'
+import type { Audiobook, CurrentlyPlaying, Episode, SpotifyApiErrorResponse, Track } from './types.js'
 
 const program = new Command()
 
+export const debug = (at: string, message: unknown) => {
+  if (program.opts<{ debug?: boolean }>().debug) {
+    console.log(`[DEBUG @ ${at}]`, message)
+  }
+}
+
+const resultIsError = <TypeIfNot>(
+  result: Result<SpotifyApiErrorResponse | TypeIfNot>,
+): result is Result<SpotifyApiErrorResponse> => result.status >= 400
+
+const handleApiError = <TypeIfNot>(
+  result: Result<SpotifyApiErrorResponse | TypeIfNot>,
+) => {
+  debug('handleApiError', result)
+
+  if (resultIsError(result)) {
+    if (result.body.error.reason === 'NO_ACTIVE_DEVICE') {
+      printMessage(`Playback device not found. Please start playback at ${getEnv('SPOTIFY_PLAYER_URL')}.`, 'error')
+      process.exit()
+    }
+
+    printMessage('Unhandled Spotify API error response.', 'error')
+    process.exit()
+  }
+
+  return result as Result<TypeIfNot>
+}
+
 program
   .name('track')
-  .option('--better')
+  .description('Control media playback from the command line. Run `track` with no commands to get information about the currently playing track.')
+  .version('0.0.1')
+  .option('--better', 'Get more accurate information for non-track playback like audiobooks and podcasts. This will have a slight impact on performance.')
+  .option('--debug', 'Get complete logging messages.')
   .action(async (option: { better?: boolean }) => {
-    const getCurrentlyPlayingTrack = new TypedFetch<CurrentlyPlaying>(
+    const result = await new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
       `${getEnv('SPOTIFY_API_URL')}/me/player/currently-playing?additional_types=track,episode`,
       {
         headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
+          Authorization: `Barer ${await getAccessToken()}`,
         },
       },
-      'Error getting currently playing track.',
-    )
-
-    const result = await getCurrentlyPlayingTrack.request()
-
-    if (result.status >= 400) {
-      console.error(result)
-      return
-    }
+      'Error getting currently playing track. Try re-running "track login".',
+    ).request().then(initialResult => handleApiError(initialResult))
 
     if (result.status === 204) {
-      console.log('Nothing playing at the moment.')
+      printMessage('Nothing playing at the moment.')
       return
     }
 
@@ -57,7 +81,7 @@ program
       return
     } else if (itemIsEpisode(result.body, result.body.item)) {
       if (option.better) {
-        const getAudiobookById = new TypedFetch<Audiobook>(
+        const audiobookResult = await new TypedFetch<Audiobook>(
           `${getEnv('SPOTIFY_API_URL')}/audiobooks/${result.body.item.show.id}`,
           {
             headers: {
@@ -65,9 +89,7 @@ program
             },
           },
           'Error getting audiobook by ID',
-        )
-
-        const audiobookResult = await getAudiobookById.request()
+        ).request().then(initialResult => handleApiError(initialResult))
 
         const episode = result.body.item
         const [chapter] = audiobookResult
@@ -98,7 +120,7 @@ program
       console.warn('To get more accurate information for your audiobooks, run "track --better". Note that this will have a small impact on performance.')
       return
     } else if (result.body.currently_playing_type === 'ad') {
-      console.log('Ad playing...')
+      printMessage('Ad playing...')
       return
     }
 
@@ -106,50 +128,9 @@ program
   })
 
 program
-  .command('play')
-  .action(async () => {
-    const resumePlayback = new TypedFetch<void>(
-      `${getEnv('SPOTIFY_API_URL')}/me/player/play`,
-      {
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-        },
-        method: 'PUT',
-      },
-      'Error resuming playback.',
-    )
-
-    const result = await resumePlayback.request()
-
-    if (result.status >= 400) {
-      console.error(result)
-    }
-  })
-
-program
-  .command('pause')
-  .action(async () => {
-    const pausePlayback = new TypedFetch<void>(
-      `${getEnv('SPOTIFY_API_URL')}/me/player/pause`,
-      {
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-        },
-        method: 'PUT',
-      },
-      'Error pausing playback.',
-    )
-
-    const result = await pausePlayback.request()
-
-    if (result.status >= 400) {
-      console.error(result)
-    }
-  })
-
-program
   .command('login')
-  .option('--open')
+  .description('Get a link to connect your Spotify account with Track.')
+  .option('-o, --open', 'Open the link in a browser window.')
   .action(async (option: { open?: boolean }) => {
     startServer([`${import.meta.dirname}/server.js`])
 
@@ -165,11 +146,118 @@ program
       state,
     })
 
-    console.log(href)
+    let message = href
 
     if (option.open) {
+      message += '\n\nOpening link in a browser tab...'
       await open(href)
     }
+
+    printMessage(message)
+  })
+
+program
+  .command('logout')
+  .description('Disconnect your Spotify account from Track.')
+  .action(async () => {
+    await data.destroy().catch(() => { }) /* eslint-disable-line no-empty-function */
+
+    printMessage('Your Spotify account has been disconnected from Track. You may log back in with `track login`. To revoke the permissions granted to Track from Spotify, visit: https://www.spotify.com/us/account/apps/.')
+  })
+
+program
+  .command('play')
+  .description('Resume playback.')
+  .action(async () => {
+    const result = await new TypedFetch<SpotifyApiErrorResponse>(
+      `${getEnv('SPOTIFY_API_URL')}/me/player/play`,
+      {
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        method: 'PUT',
+      },
+      'Error resuming playback.',
+    ).request().then(initialResult => handleApiError(initialResult))
+
+    debug('resume playback result', result)
+  })
+
+program
+  .command('pause')
+  .description('Pause playback.')
+  .action(async () => {
+    const result = await new TypedFetch<SpotifyApiErrorResponse>(
+      `${getEnv('SPOTIFY_API_URL')}/me/player/pause`,
+      {
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        method: 'PUT',
+      },
+      'Error pausing playback.',
+    ).request().then(initialResult => handleApiError(initialResult))
+
+    debug('pause playback result', result)
+  })
+
+program
+  .command('next')
+  .description('Skip to the next track.')
+  .action(async () => {
+    const result = await new TypedFetch<SpotifyApiErrorResponse>(
+      `${getEnv('SPOTIFY_API_URL')}/me/player/next`,
+      {
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        method: 'POST',
+      },
+      'Error skipping to the next track.',
+    ).request().then(initialResult => handleApiError(initialResult))
+
+    debug('next track result', result)
+  })
+
+program
+  .command('previous')
+  .description('Return to the previous track.')
+  .action(async () => {
+    const result = await new TypedFetch<SpotifyApiErrorResponse>(
+      `${getEnv('SPOTIFY_API_URL')}/me/player/previous`,
+      {
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        method: 'POST',
+      },
+      'Error returning to the previous track.',
+    ).request().then(initialResult => handleApiError(initialResult))
+
+    debug('previous track result', result)
+  })
+
+program
+  .command('volume')
+  .argument('<percent>')
+  .description('Set the volume by percentage.')
+  .action(async (percent: string) => {
+    const { href } = buildUrl(`${getEnv('SPOTIFY_API_URL')}/me/player/volume`, {
+      volume_percent: percent,
+    })
+
+    const result = await new TypedFetch<SpotifyApiErrorResponse>(
+      href,
+      {
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        method: 'PUT',
+      },
+      'Error setting the volume.',
+    ).request().then(initialResult => handleApiError(initialResult))
+
+    debug('set volume result', result)
   })
 
 program.parse()
