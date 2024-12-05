@@ -6,7 +6,7 @@
 - [x] pause/resume playback
 - [x] refresh token
 - [x] add logout, next, previous, volume commands
-- [ ] add help messages and readme
+- [x] add help messages and readme
 - [ ] handle client-side messages
 - [x] support custom output for audiobooks
 - [ ] make client messages prettier

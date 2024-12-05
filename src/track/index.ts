@@ -43,10 +43,12 @@ const handleApiError = <TypeIfNot>(
 
 program
   .name('track')
-  .description('Control media playback from the command line. Run `track` with no commands to get information about the currently playing track.')
-  .version('0.0.1')
-  .option('--book', 'Get more accurate information for audiobooks. This will have a slight impact on performance.')
-  .option('--debug', 'Get complete logging messages.')
+  .description('Control media playback from the command line. Run `track` with no additional commands to get information about the currently playing track.')
+  .version('0.0.1', '-v, --version', 'Output the current version.')
+  .helpCommand('help [command]', 'Get help for the given command.')
+  .option('-b, --book', 'Get more accurate information for audiobooks. This will have a slight impact on performance.')
+  .option('-d, --debug', 'Get complete logging messages.')
+  .helpOption('-h, --help', 'Get help for the given command.')
   .action(async (option: { book?: boolean }) => {
     const result = await new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
       `${getEnv('SPOTIFY_API_URL')}/me/player/currently-playing?additional_types=track,episode`,
@@ -113,7 +115,10 @@ program
           /* eslint-disable */ const audiobook = {
             chapter: result.body.item.name,
             book: audiobookResult.body.name,
-            author: audiobookResult.body.authors.map(author => author.name).join(', '),
+            author: audiobookResult
+              .body
+              .authors
+              .map(author => author.name).join(', '),
             release: chapter?.release_date,
           } /* eslint-enable */
 
