@@ -6,3 +6,4 @@
 - [x] pause/resume playback
 - [x] refresh token
 - [ ] handle free users
+- [x] support custom output for audiobooks
