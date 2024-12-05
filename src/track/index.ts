@@ -10,7 +10,7 @@ const program = new Command()
 
 export const debug = (at: string, message: unknown) => {
   if (program.opts<{ debug?: boolean }>().debug) {
-    console.log(`[DEBUG @ ${at}]`, message)
+    console.log(`\n[DEBUG @ ${at}]`, message)
   }
 }
 
@@ -25,7 +25,12 @@ const handleApiError = <TypeIfNot>(
 
   if (resultIsError(result)) {
     if (result.body.error.reason === 'NO_ACTIVE_DEVICE') {
-      printMessage(`Playback device not found. Please start playback at ${getEnv('SPOTIFY_PLAYER_URL')}.`, 'error')
+      printMessage(`${result.message} Please start playback at ${getEnv('SPOTIFY_PLAYER_URL')}.`, 'error')
+      process.exit()
+    }
+
+    if (result.status === 400) {
+      printMessage(`${result.message} Try running "track login".`, 'error')
       process.exit()
     }
 
@@ -40,17 +45,17 @@ program
   .name('track')
   .description('Control media playback from the command line. Run `track` with no commands to get information about the currently playing track.')
   .version('0.0.1')
-  .option('--better', 'Get more accurate information for non-track playback like audiobooks and podcasts. This will have a slight impact on performance.')
+  .option('--book', 'Get more accurate information for audiobooks. This will have a slight impact on performance.')
   .option('--debug', 'Get complete logging messages.')
-  .action(async (option: { better?: boolean }) => {
+  .action(async (option: { book?: boolean }) => {
     const result = await new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
       `${getEnv('SPOTIFY_API_URL')}/me/player/currently-playing?additional_types=track,episode`,
       {
         headers: {
-          Authorization: `Barer ${await getAccessToken()}`,
+          Authorization: `Bearer ${await getAccessToken()}`,
         },
       },
-      'Error getting currently playing track. Try re-running "track login".',
+      'Unable to get currently playing track.',
     ).request().then(initialResult => handleApiError(initialResult))
 
     if (result.status === 204) {
@@ -77,10 +82,10 @@ program
         album: result.body.item.album.name,
       } /* eslint-enable */
 
-      console.log(track)
+      printMessage(JSON.stringify(track, null, 2))
       return
     } else if (itemIsEpisode(result.body, result.body.item)) {
-      if (option.better) {
+      if (option.book) {
         const audiobookResult = await new TypedFetch<Audiobook>(
           `${getEnv('SPOTIFY_API_URL')}/audiobooks/${result.body.item.show.id}`,
           {
@@ -89,24 +94,32 @@ program
             },
           },
           'Error getting audiobook by ID',
-        ).request().then(initialResult => handleApiError(initialResult))
+        ).request().then((initialResult) => {
+          if (initialResult.status === 404) {
+            return null
+          }
 
-        const episode = result.body.item
-        const [chapter] = audiobookResult
-          .body
-          .chapters
-          .items
-          .filter(item => item.id === episode.id)
+          return handleApiError(initialResult)
+        })
 
-        /* eslint-disable */ const audiobook = {
-          chapter: result.body.item.name,
-          book: audiobookResult.body.name,
-          author: audiobookResult.body.authors.map(author => author.name).join(', '),
-          release: chapter?.release_date,
-        } /* eslint-enable */
+        if (audiobookResult) {
+          const episode = result.body.item
+          const [chapter] = audiobookResult
+            .body
+            .chapters
+            .items
+            .filter(item => item.id === episode.id)
 
-        console.log(audiobook)
-        return
+          /* eslint-disable */ const audiobook = {
+            chapter: result.body.item.name,
+            book: audiobookResult.body.name,
+            author: audiobookResult.body.authors.map(author => author.name).join(', '),
+            release: chapter?.release_date,
+          } /* eslint-enable */
+
+          printMessage(JSON.stringify(audiobook, null, 2))
+          return
+        }
       }
 
       /* eslint-disable */ const episode = {
@@ -116,8 +129,8 @@ program
         release: new Date(result.body.item.release_date).toLocaleDateString()
       } /* eslint-enable */
 
-      console.log(episode)
-      console.warn('To get more accurate information for your audiobooks, run "track --better". Note that this will have a small impact on performance.')
+      printMessage(JSON.stringify(episode, null, 2))
+      printMessage('To get more accurate information for your audiobooks, run "track --book". Note that this will have a small impact on performance.', 'warn')
       return
     } else if (result.body.currently_playing_type === 'ad') {
       printMessage('Ad playing...')

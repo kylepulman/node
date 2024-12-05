@@ -4,7 +4,7 @@ import { FileStorage, TypedFetch, getEnv } from '../lib/index.js'
 import type { Token } from './types.js'
 
 export const printMessage = (message: string, type?: 'log' | 'error' | 'warn') => {
-  message = `\n${message}\n`
+  message = `\n${message}`
 
   if (type === 'error') {
     console.error(message)

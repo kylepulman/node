@@ -31,7 +31,7 @@ app.get('/api/auth', async (req, res) => {
     res.status(400).json(new Result(
       400,
       error,
-      'Error requesting authorization code, try re-running "track login".',
+      'Error requesting authorization code.',
     ))
 
     process.exit()
