@@ -15,14 +15,14 @@ Options:
   -h, --help        Get help for the given command.
 
 Commands:
-  login [options]   Get a link to connect your Spotify account with Track.
-  logout            Disconnect your Spotify account from Track.
-  play              Resume playback.
-  pause             Pause playback.
-  next              Skip to the next track.
-  previous          Return to the previous track.
-  volume <percent>  Set the volume by percentage.
-  help [command]    Get help for the given command.
+  login [options]      Get a link to connect your Spotify account with Track.
+  logout               Disconnect your Spotify account from Track.
+  play                 Resume playback.
+  pause                Pause playback.
+  next                 Skip to the next track.
+  previous|prev        Return to the previous track.
+  volume|vol <percent> Set the volume by percentage.
+  help [command]       Get help for the given command.
 ```
 
 ## `track login [options]`
@@ -84,7 +84,7 @@ Options:
 ## `track previous`
 
 ```
-Usage: track previous [options]
+Usage: track previous|prev [options]
 
 Return to the previous track.
 
@@ -95,7 +95,7 @@ Options:
 ## `track volume <percent>`
 
 ```
-Usage: track volume [options] <percent>
+Usage: track volume|vol [options] <percent>
 
 Set the volume by percentage.
 

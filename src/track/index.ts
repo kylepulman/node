@@ -50,11 +50,13 @@ program
 
 program
   .command('previous')
+  .alias('prev')
   .description('Return to the previous track.')
   .action(previous)
 
 program
   .command('volume')
+  .alias('vol')
   .argument('<percent>')
   .description('Set the volume by percentage.')
   .action((percent: string) => volume(percent))
