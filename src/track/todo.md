@@ -7,11 +7,10 @@
 - [x] refresh token
 - [x] add logout, next, previous, volume commands
 - [x] add help messages and readme
-- [ ] handle client-side messages
 - [x] support custom output for audiobooks
+- [x] command aliases
+- [x] generalize debug utility
+- [ ] lock in responses
 - [ ] make client messages prettier
 - [ ] start playback
-- [x] command aliases
-- [ ] handle all responses per API docs
 - [ ] cache responses
-- [x] generalize debug utility

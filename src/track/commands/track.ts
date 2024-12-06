@@ -2,6 +2,18 @@ import { TypedFetch, getEnv } from '../../lib/index.js'
 import { getAccessToken, handleApiError, printMessage } from '../lib.js'
 import type { Audiobook, CurrentlyPlaying, Episode, SpotifyApiErrorResponse, Track } from '../types.js'
 
+const itemIsTrack = (
+  body: CurrentlyPlaying,
+  item: CurrentlyPlaying['item'],
+): item is Track =>
+  body.currently_playing_type === 'track' && item?.type === 'track'
+
+const itemIsEpisode = (
+  body: CurrentlyPlaying,
+  item: CurrentlyPlaying['item'],
+): item is Episode =>
+  body.currently_playing_type === 'episode' && item?.type === 'episode'
+
 const getCurrentlyPlayingTrack = async () =>
   new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
     `${getEnv('SPOTIFY_API_URL')}/me/player/currently-playing?additional_types=track,episode`,
@@ -37,18 +49,6 @@ export default async (option: { book?: boolean }) => {
     printMessage('Nothing playing at the moment.')
     return
   }
-
-  const itemIsTrack = (
-    body: CurrentlyPlaying,
-    item: CurrentlyPlaying['item'],
-  ): item is Track =>
-    body.currently_playing_type === 'track' && item?.type === 'track'
-
-  const itemIsEpisode = (
-    body: CurrentlyPlaying,
-    item: CurrentlyPlaying['item'],
-  ): item is Episode =>
-    body.currently_playing_type === 'episode' && item?.type === 'episode'
 
   if (itemIsTrack(result.body, result.body.item)) {
     /* eslint-disable */ const track = {

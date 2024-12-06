@@ -33,7 +33,7 @@ export const handleApiError = <TypeIfNot>(
     }
 
     if (result.status === 401) {
-      printMessage(`${result.message} Try running "track login".`, 'error')
+      printMessage(`${result.message} Please try re-authenticating with "track login"`, 'error')
       process.exit()
     }
 
@@ -46,6 +46,11 @@ export const handleApiError = <TypeIfNot>(
 
     if (result.status === 429) {
       printMessage('Too many requests.', 'error')
+      process.exit()
+    }
+
+    if (result.status >= 400) {
+      printMessage('There was an error connecting with Spotify, please try re-authenticating with "track login"', 'error')
       process.exit()
     }
 
@@ -80,12 +85,13 @@ export const getAccessToken = async () => {
 
   try {
     stored = await data.get()
-  } catch (_err) {
+  } catch (err) {
+    debug('get stored at getAccessToken', err)
     printMessage('Please run `track login` to connect your Spotify account with Track.', 'error')
-    process.exit()
+    process.exit(1)
   }
 
-  if (stored.expiresAt && new Date() >= new Date(stored.expiresAt)) {
+  if (stored.expiresAt && new Date() <= new Date(stored.expiresAt)) {
     const requestTokenWithRefreshToken = new TypedFetch<Token>(
       getEnv('SPOTIFY_TOKEN_URL'),
       {

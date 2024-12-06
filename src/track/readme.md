@@ -37,6 +37,24 @@ Options:
   -h, --help  Get help for the given command.
 ```
 
+- Permissions screen
+  - User clicks "cancel"
+    - State mismatch
+    - Access denied
+  - User clicks "agree"
+    - State mismatch
+    - Unknown error
+- Request token with authorization code
+  - 400: Unsupported grant - grant type is not supported, grant type is missing
+  - 400: Invalid grant - invalid redirect URI, invalid auth code
+  - 400: Invalid client - bad basic auth
+  - 415: Unsupported media type - content type mismatch, 
+  - 404: Not found - bad URL
+  - 405: Method not allowed
+- Get stored data
+  - 500: Error retrieving stored token
+
+
 ## `track logout`
 
 ```
