@@ -1,6 +1,18 @@
 import { buildUrl, getEnv, TypedFetch } from '../../lib/index.js'
-import { debug, getAccessToken, handleApiError, printMessage } from '../lib.js'
+import { getAccessToken, handleApiError, printMessage } from '../lib.js'
 import type { SpotifyApiErrorResponse } from '../types.js'
+
+const setVolumeByPercent = async (href: string) =>
+  new TypedFetch<SpotifyApiErrorResponse>(
+    href,
+    {
+      headers: {
+        Authorization: `Bearer ${await getAccessToken()}`,
+      },
+      method: 'PUT',
+    },
+    'Error setting the volume.',
+  ).request().then(initialResult => handleApiError(initialResult))
 
 export default async (percent: string) => {
   const percentAsNumber = Math.floor(Number(percent))
@@ -14,16 +26,5 @@ export default async (percent: string) => {
     volume_percent: percentAsNumber,
   })
 
-  const result = await new TypedFetch<SpotifyApiErrorResponse>(
-    href,
-    {
-      headers: {
-        Authorization: `Bearer ${await getAccessToken()}`,
-      },
-      method: 'PUT',
-    },
-    'Error setting the volume.',
-  ).request().then(initialResult => handleApiError(initialResult))
-
-  debug('set volume result', result)
+  await setVolumeByPercent(href)
 }

@@ -1,9 +1,9 @@
 import { TypedFetch, getEnv } from '../../lib/index.js'
-import { debug, getAccessToken, handleApiError, printMessage } from '../lib.js'
+import { getAccessToken, handleApiError, printMessage } from '../lib.js'
 import type { Audiobook, CurrentlyPlaying, Episode, SpotifyApiErrorResponse, Track } from '../types.js'
 
-export default async (option: { book?: boolean }) => {
-  const result = await new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
+const getCurrentlyPlayingTrack = async () =>
+  new TypedFetch<CurrentlyPlaying | SpotifyApiErrorResponse>(
     `${getEnv('SPOTIFY_API_URL')}/me/player/currently-playing?additional_types=track,episode`,
     {
       headers: {
@@ -13,7 +13,25 @@ export default async (option: { book?: boolean }) => {
     'Unable to get currently playing track.',
   ).request().then(initialResult => handleApiError(initialResult))
 
-  debug('track command', JSON.stringify(result, null, 2))
+const getAudiobookByShowId = async (showId: string) =>
+  new TypedFetch<Audiobook>(
+    `${getEnv('SPOTIFY_API_URL')}/audiobooks/${showId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${await getAccessToken()}`,
+      },
+    },
+    'Error getting audiobook by ID',
+  ).request().then((initialResult) => {
+    if (initialResult.status === 404) {
+      return null
+    }
+
+    return handleApiError(initialResult)
+  })
+
+export default async (option: { book?: boolean }) => {
+  const result = await getCurrentlyPlayingTrack()
 
   if (result.status === 204) {
     printMessage('Nothing playing at the moment.')
@@ -43,21 +61,7 @@ export default async (option: { book?: boolean }) => {
     return
   } else if (itemIsEpisode(result.body, result.body.item)) {
     if (option.book) {
-      const audiobookResult = await new TypedFetch<Audiobook>(
-        `${getEnv('SPOTIFY_API_URL')}/audiobooks/${result.body.item.show.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-        },
-        'Error getting audiobook by ID',
-      ).request().then((initialResult) => {
-        if (initialResult.status === 404) {
-          return null
-        }
-
-        return handleApiError(initialResult)
-      })
+      const audiobookResult = await getAudiobookByShowId(result.body.item.show.id)
 
       if (audiobookResult) {
         const episode = result.body.item

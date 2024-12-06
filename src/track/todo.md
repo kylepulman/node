@@ -13,3 +13,5 @@
 - [ ] start playback
 - [x] command aliases
 - [ ] handle all responses per API docs
+- [ ] cache responses
+- [ ] generalize debug utility

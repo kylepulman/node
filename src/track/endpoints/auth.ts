@@ -18,7 +18,7 @@ const requestTokenWithAuthorizationCode = (code: string) => new TypedFetch<Token
     method: 'POST',
   },
   'Error requesting token with authorization code.',
-)
+).request()
 
 export default async (req: Request, res: Response) => {
   const { state, code, error } = req.query
@@ -35,7 +35,7 @@ export default async (req: Request, res: Response) => {
     process.exit()
   }
 
-  const result = await requestTokenWithAuthorizationCode(code).request()
+  const result = await requestTokenWithAuthorizationCode(code)
 
   if (result.status >= 400) {
     res.status(result.status).json(result)

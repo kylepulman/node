@@ -38,8 +38,25 @@ export const handleApiError = <TypeIfNot>(
       process.exit()
     }
 
-    if (result.status === 400) {
+    if (result.status === 401) {
       printMessage(`${result.message} Try running "track login".`, 'error')
+      process.exit()
+    }
+
+    if (result.status === 403) {
+      if (result.body.error.reason === 'PREMIUM_REQUIRED') {
+        printMessage('You must be subscribed to Spotify Premium to use this feature.', 'warn')
+        process.exit()
+      }
+    }
+
+    if (result.status === 429) {
+      printMessage('Too many requests.', 'error')
+      process.exit()
+    }
+
+    if (result.status >= 500) {
+      printMessage('Spotify is reporting a server error that is preventing this command from executing successfully. Please try again later.', 'error')
       process.exit()
     }
 
