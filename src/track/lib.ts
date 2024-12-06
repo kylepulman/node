@@ -1,7 +1,9 @@
 /* eslint no-console: 'off' */
 import type { UUID } from 'crypto'
-import { FileStorage, TypedFetch, getEnv } from '../lib/index.js'
-import type { Token } from './types.js'
+import { FileStorage, Result, TypedFetch, getEnv } from '../lib/index.js'
+import type { SpotifyApiErrorResponse, Token } from './types.js'
+
+export const DIRNAME = import.meta.dirname
 
 export const printMessage = (message: string, type?: 'log' | 'error' | 'warn') => {
   message = `\n${message}`
@@ -13,6 +15,39 @@ export const printMessage = (message: string, type?: 'log' | 'error' | 'warn') =
   } else {
     console.log(message)
   }
+}
+
+export const debug = (at: string, message: unknown) => {
+  if (process.argv.filter(debugFlag => debugFlag === '--debug')[0] === '--debug') {
+    console.log(`\n[DEBUG @ ${at}]`, message)
+  }
+}
+
+export const resultIsError = <TypeIfNot>(
+  result: Result<SpotifyApiErrorResponse | TypeIfNot>,
+): result is Result<SpotifyApiErrorResponse> => result.status >= 400
+
+export const handleApiError = <TypeIfNot>(
+  result: Result<SpotifyApiErrorResponse | TypeIfNot>,
+) => {
+  debug('handleApiError', result)
+
+  if (resultIsError(result)) {
+    if (result.body.error.reason === 'NO_ACTIVE_DEVICE') {
+      printMessage(`${result.message} Please start playback at ${getEnv('SPOTIFY_PLAYER_URL')}.`, 'error')
+      process.exit()
+    }
+
+    if (result.status === 400) {
+      printMessage(`${result.message} Try running "track login".`, 'error')
+      process.exit()
+    }
+
+    printMessage('Unhandled Spotify API error response.', 'error')
+    process.exit()
+  }
+
+  return result as Result<TypeIfNot>
 }
 
 export const data = new FileStorage<{

@@ -11,3 +11,5 @@
 - [x] support custom output for audiobooks
 - [ ] make client messages prettier
 - [ ] start playback
+- [ ] command aliases
+- [ ] handle all responses per API docs

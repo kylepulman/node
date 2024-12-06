@@ -1,5 +1,6 @@
 {
   "name": "node",
+  "version": "0.0.1",
   "type": "module",
   "bin": {
     "track": "dist/track/index.js"
