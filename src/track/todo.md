@@ -14,4 +14,4 @@
 - [x] command aliases
 - [ ] handle all responses per API docs
 - [ ] cache responses
-- [ ] generalize debug utility
+- [x] generalize debug utility

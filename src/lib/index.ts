@@ -110,3 +110,9 @@ export const startServer = (args: string[]) => {
     stdio: 'ignore',
   }).unref()
 }
+
+export const debug = (at: string, message: unknown) => {
+  if (process.argv.filter(debugFlag => debugFlag === '--debug')[0] === '--debug') {
+    console.log(`\n[DEBUG @ ${at}]`, message) /* eslint-disable-line no-console */
+  }
+}

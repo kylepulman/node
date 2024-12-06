@@ -1,6 +1,6 @@
 /* eslint no-console: 'off' */
 import type { UUID } from 'crypto'
-import { FileStorage, Result, TypedFetch, getEnv } from '../lib/index.js'
+import { FileStorage, Result, TypedFetch, debug, getEnv } from '../lib/index.js'
 import type { SpotifyApiErrorResponse, Token } from './types.js'
 
 export const DIRNAME = import.meta.dirname
@@ -14,12 +14,6 @@ export const printMessage = (message: string, type?: 'log' | 'error' | 'warn') =
     console.warn(message)
   } else {
     console.log(message)
-  }
-}
-
-export const debug = (at: string, message: unknown) => {
-  if (process.argv.filter(debugFlag => debugFlag === '--debug')[0] === '--debug') {
-    console.log(`\n[DEBUG @ ${at}]`, message)
   }
 }
 
